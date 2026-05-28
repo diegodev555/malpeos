@@ -3,6 +3,7 @@ export interface Boat {
   name: string;
   registration: string;
   engine_details: string | null;
+  image_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -81,6 +82,19 @@ export interface ExpenseFormData {
   base_amount: number;
   gst_amount: number;
   description?: string;
+}
+
+export interface BoatSummary {
+  boat_id: string;
+  boat_name: string;
+  registration: string;
+  engine_details: string | null;
+  image_url: string | null;
+  total_trips: number;
+  active_trips: number;
+  total_revenue: number;
+  total_expense: number;
+  total_net_profit: number;
 }
 
 // Calendar event type for react-big-calendar

@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS boats (
   name TEXT NOT NULL,
   registration TEXT NOT NULL UNIQUE,
   engine_details TEXT,
+  image_url TEXT,
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
@@ -225,10 +226,59 @@ CREATE TRIGGER trg_trips_updated_at
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 -- ============================================================
+-- VIEW: Boat Summary (aggregated financials per boat)
+-- ============================================================
+CREATE OR REPLACE VIEW boat_summary AS
+SELECT
+  b.id AS boat_id,
+  b.name AS boat_name,
+  b.registration,
+  b.engine_details,
+  b.image_url,
+  COUNT(DISTINCT t.id) AS total_trips,
+  COUNT(DISTINCT t.id) FILTER (WHERE t.status = 'active') AS active_trips,
+  COALESCE(SUM(cl.total_gross_revenue), 0) AS total_revenue,
+  COALESCE(SUM(e.total_expense), 0) AS total_expense,
+  COALESCE(SUM(cl.total_gross_revenue), 0) - COALESCE(SUM(e.total_expense), 0) AS total_net_profit
+FROM boats b
+LEFT JOIN trips t ON t.boat_id = b.id
+LEFT JOIN (
+  SELECT trip_id, SUM(weight_kg * price_per_kg) AS total_gross_revenue
+  FROM catch_logs GROUP BY trip_id
+) cl ON cl.trip_id = t.id
+LEFT JOIN (
+  SELECT trip_id, SUM(base_amount) + SUM(gst_amount) AS total_expense
+  FROM expenses GROUP BY trip_id
+) e ON e.trip_id = t.id
+GROUP BY b.id, b.name, b.registration, b.engine_details, b.image_url;
+
+-- ============================================================
+-- BOAT IMAGE STORAGE: boat-images bucket
+-- ============================================================
+-- INSERT INTO storage.buckets (id, name, public)
+-- VALUES ('boat-images', 'boat-images', true)
+-- ON CONFLICT (id) DO NOTHING;
+--
+-- DROP POLICY IF EXISTS "anon_upload_boat_images" ON storage.objects;
+-- CREATE POLICY "anon_upload_boat_images"
+--   ON storage.objects FOR INSERT TO anon
+--   WITH CHECK (bucket_id = 'boat-images');
+--
+-- DROP POLICY IF EXISTS "anon_read_boat_images" ON storage.objects;
+-- CREATE POLICY "anon_read_boat_images"
+--   ON storage.objects FOR SELECT TO anon
+--   USING (bucket_id = 'boat-images');
+--
+-- DROP POLICY IF EXISTS "anon_delete_boat_images" ON storage.objects;
+-- CREATE POLICY "anon_delete_boat_images"
+--   ON storage.objects FOR DELETE TO anon
+--   USING (bucket_id = 'boat-images');
+
+-- ============================================================
 -- SEED DATA: Sample boats
 -- ============================================================
-INSERT INTO boats (name, registration, engine_details) VALUES
-  ('Sea Queen', 'IND-MP-2024-001', 'Leyland Iron Boat - 120HP'),
-  ('Wave Dancer', 'IND-MP-2024-002', 'Ashok Leyland - 95HP'),
-  ('Fish King', 'IND-MP-2024-003', 'Cummins Marine - 150HP')
+INSERT INTO boats (name, registration, engine_details, image_url) VALUES
+  ('Sea Queen', 'IND-MP-2024-001', 'Leyland Iron Boat - 120HP', NULL),
+  ('Wave Dancer', 'IND-MP-2024-002', 'Ashok Leyland - 95HP', NULL),
+  ('Fish King', 'IND-MP-2024-003', 'Cummins Marine - 150HP', NULL)
 ON CONFLICT (registration) DO NOTHING;

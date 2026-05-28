@@ -21,11 +21,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { PlusCircle, Pencil, Trash2, Ship } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, Ship, ExternalLink } from "lucide-react";
 import type { Boat } from "@/types/database";
 
 export default function BoatsPage() {
+  const router = useRouter();
   const [boats, setBoats] = useState<Boat[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -166,10 +168,13 @@ export default function BoatsPage() {
                 {boats.map((boat) => (
                   <TableRow key={boat.id}>
                     <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        <Ship className="h-4 w-4 text-muted-foreground" />
+                      <button
+                        onClick={() => router.push(`/boats/${boat.id}`)}
+                        className="flex items-center gap-2 cursor-pointer text-left hover:text-primary transition-colors"
+                      >
+                        <Ship className="h-4 w-4 text-muted-foreground shrink-0" />
                         {boat.name}
-                      </div>
+                      </button>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">{boat.registration}</Badge>

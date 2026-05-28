@@ -21,6 +21,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { PlusCircle, Paperclip, Upload, FileText, Trash2, Download, File, Image, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import type { TripBill } from "@/types/database";
@@ -53,6 +54,7 @@ function formatFileSize(bytes: number) {
 
 interface TripRow {
   trip_id: string;
+  boat_id: string;
   boat_name: string;
   start_date: string;
   end_date: string | null;
@@ -270,6 +272,7 @@ function BillUploadDialog({ tripId, tripLabel }: { tripId: string; tripLabel: st
 }
 
 export default function TripsPage() {
+  const router = useRouter();
   const [trips, setTrips] = useState<TripRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -347,7 +350,12 @@ export default function TripsPage() {
                 {trips.map((trip) => (
                   <TableRow key={trip.trip_id}>
                     <TableCell className="font-medium">
-                      {trip.boat_name}
+                      <button
+                        onClick={() => router.push(`/boats/${trip.boat_id}`)}
+                        className="cursor-pointer text-left hover:text-primary transition-colors"
+                      >
+                        {trip.boat_name}
+                      </button>
                     </TableCell>
                     <TableCell>
                       {new Date(trip.start_date).toLocaleDateString("en-IN")}
