@@ -31,10 +31,6 @@ export default function TripsPage() {
   const [trips, setTrips] = useState<TripRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchTrips();
-  }, []);
-
   async function fetchTrips() {
     try {
       const supabase = getSupabaseClient();
@@ -52,6 +48,14 @@ export default function TripsPage() {
     }
   }
 
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      void fetchTrips();
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
+  }, []);
+
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -63,7 +67,7 @@ export default function TripsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Trips</h1>
+          <h1>Trips</h1>
           <p className="text-muted-foreground">All fishing trips</p>
         </div>
         <Button render={<Link href="/trips/new" />}>

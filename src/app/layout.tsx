@@ -1,19 +1,8 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { NavSidebar } from "@/components/nav-sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "malpeOS - Fleet Management",
@@ -26,14 +15,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex">
+    <html lang="en" className="h-full antialiased">
+      <body className="min-h-full flex text-[15px]">
         <TooltipProvider>
           <NavSidebar />
-          <main className="flex-1 p-4 md:p-6 overflow-auto pt-20 md:pt-6">
+          <main className="relative flex-1 overflow-auto p-4 pt-20 md:p-8 md:pt-8">
             {children}
           </main>
           <Toaster />

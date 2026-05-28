@@ -80,14 +80,18 @@ export default function NewTripPage() {
     },
   ]);
 
-  useEffect(() => {
-    loadBoats();
-  }, []);
-
   async function loadBoats() {
     const { data } = await supabase().from("boats").select("*").order("name");
     if (data) setBoats(data);
   }
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      void loadBoats();
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
+  }, []);
 
   function addCatchLog() {
     setCatchLogs([
@@ -245,7 +249,7 @@ export default function NewTripPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">New Trip</h1>
+          <h1>New Trip</h1>
           <p className="text-muted-foreground">
             Log a fishing trip with catch and expense details
           </p>
@@ -327,7 +331,7 @@ export default function NewTripPage() {
           {catchLogs.map((catchLog, index) => (
             <div
               key={catchLog.id}
-              className="flex flex-wrap items-end gap-3 p-3 rounded-lg border bg-card"
+              className="glass-control flex flex-wrap items-end gap-3 rounded-2xl border border-white/60 p-3"
             >
               <span className="text-xs text-muted-foreground font-medium self-center mb-2">
                 #{index + 1}
@@ -424,7 +428,7 @@ export default function NewTripPage() {
           {expenses.map((expense, index) => (
             <div
               key={expense.id}
-              className="flex flex-wrap items-end gap-3 p-3 rounded-lg border bg-card"
+              className="glass-control flex flex-wrap items-end gap-3 rounded-2xl border border-white/60 p-3"
             >
               <span className="text-xs text-muted-foreground font-medium self-center mb-2">
                 #{index + 1}
@@ -534,26 +538,26 @@ export default function NewTripPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div>
               <div className="text-sm text-muted-foreground">Gross Revenue</div>
-              <div className="text-xl font-bold text-green-600">
+              <div className="text-[1.35rem] font-semibold text-green-600">
                 {formatCurrency(totalRevenue)}
               </div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground">Total Expense</div>
-              <div className="text-xl font-bold text-red-600">
+              <div className="text-[1.35rem] font-semibold text-red-600">
                 {formatCurrency(totalExpense)}
               </div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground">GST (ITC)</div>
-              <div className="text-xl font-bold text-purple-600">
+              <div className="text-[1.35rem] font-semibold text-purple-600">
                 {formatCurrency(totalGst)}
               </div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground">Net Profit</div>
               <div
-                className={`text-xl font-bold ${
+                className={`text-[1.35rem] font-semibold ${
                   netProfit >= 0 ? "text-green-600" : "text-red-600"
                 }`}
               >

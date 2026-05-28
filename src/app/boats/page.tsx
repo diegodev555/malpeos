@@ -132,7 +132,7 @@ export default function BoatsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Fleet Manager</h1>
+          <h1>Fleet Manager</h1>
           <p className="text-muted-foreground">Manage your fishing boats</p>
         </div>
         <Button onClick={openCreateDialog}>

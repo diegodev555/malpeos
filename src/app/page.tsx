@@ -53,10 +53,6 @@ export default function DashboardPage() {
     activeTrips: 0,
   });
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
   async function fetchDashboardData() {
     try {
       setLoading(true);
@@ -174,6 +170,14 @@ export default function DashboardPage() {
     }
   }
 
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      void fetchDashboardData();
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
+  }, []);
+
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -200,7 +204,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <h1>Dashboard</h1>
           <p className="text-muted-foreground">
             Year-to-date financial overview
           </p>
@@ -220,7 +224,7 @@ export default function DashboardPage() {
             />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-[1.7rem] font-semibold tracking-normal">
               {formatCurrency(totals.ytdNetProfit)}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -235,7 +239,7 @@ export default function DashboardPage() {
             <DollarSign className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-[1.7rem] font-semibold tracking-normal">
               {formatCurrency(totals.ytdRevenue)}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -252,7 +256,7 @@ export default function DashboardPage() {
             <Receipt className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-[1.7rem] font-semibold tracking-normal">
               {formatCurrency(totals.ytdGstPaid)}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -269,7 +273,7 @@ export default function DashboardPage() {
             <TrendingUp className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-[1.7rem] font-semibold tracking-normal">
               {formatCurrency(totals.ytdExpenses)}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -302,21 +306,22 @@ export default function DashboardPage() {
                   <YAxis className="text-xs text-muted-foreground" />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "var(--radius)",
+                      backgroundColor: "oklch(1 0 0 / 0.76)",
+                      border: "1px solid oklch(1 0 0 / 0.62)",
+                      borderRadius: "var(--radius-lg)",
+                      backdropFilter: "blur(18px)",
                     }}
                     formatter={(value) => [formatCurrency(Number(value)), ""]}
                   />
                   <Bar
                     dataKey="revenue"
-                    fill="hsl(var(--chart-1))"
+                    fill="var(--chart-1)"
                     radius={[4, 4, 0, 0]}
                     name="Revenue"
                   />
                   <Bar
                     dataKey="expenses"
-                    fill="hsl(var(--chart-2))"
+                    fill="var(--chart-2)"
                     radius={[4, 4, 0, 0]}
                     name="Expenses"
                   />
@@ -361,9 +366,10 @@ export default function DashboardPage() {
                   </Pie>
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "var(--radius)",
+                      backgroundColor: "oklch(1 0 0 / 0.76)",
+                      border: "1px solid oklch(1 0 0 / 0.62)",
+                      borderRadius: "var(--radius-lg)",
+                      backdropFilter: "blur(18px)",
                     }}
                     formatter={(value) => [formatCurrency(Number(value)), ""]}
                   />

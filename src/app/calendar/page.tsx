@@ -53,7 +53,11 @@ export default function CalendarPage() {
   }, []);
 
   useEffect(() => {
-    fetchTrips();
+    const timeout = window.setTimeout(() => {
+      void fetchTrips();
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
   }, [fetchTrips]);
 
   const eventPropGetter = (event: CalendarEvent) => {
@@ -68,10 +72,12 @@ export default function CalendarPage() {
       style: {
         backgroundColor: color,
         borderColor: color,
-        borderRadius: "6px",
+        borderRadius: "12px",
         opacity: event.resource.status === "active" ? 1 : 0.7,
-        fontSize: "0.8rem",
-        padding: "2px 6px",
+        fontSize: "0.82rem",
+        fontWeight: 700,
+        padding: "3px 8px",
+        boxShadow: "inset 0 1px 0 oklch(1 0 0 / 0.35)",
       },
     };
   };
@@ -79,7 +85,7 @@ export default function CalendarPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Fleet Calendar</h1>
+        <h1>Fleet Calendar</h1>
         <p className="text-muted-foreground">
           Visual overview of boat trips at sea
         </p>
