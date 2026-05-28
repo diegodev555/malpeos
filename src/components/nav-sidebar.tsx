@@ -70,7 +70,7 @@ export function NavSidebar() {
           <span className="glass-control flex size-9 items-center justify-center rounded-2xl border border-white/60">
             <Anchor className="h-5 w-5 text-primary" />
           </span>
-          <span className="font-heading text-[1.35rem] font-bold tracking-normal">
+          <span className="font-heading text-[1.75rem] font-bold tracking-normal">
             <span style={{ color: "#0B3C64" }}>malpe</span><span style={{ color: "#3CB4E5" }}>OS</span>
           </span>
         </Link>
@@ -90,7 +90,7 @@ export function NavSidebar() {
               <span className="glass-control flex size-9 items-center justify-center rounded-2xl border border-white/60">
                 <Anchor className="h-5 w-5 text-primary" />
               </span>
-              <span className="font-heading text-[1.35rem] font-bold tracking-normal">
+              <span className="font-heading text-[1.75rem] font-bold tracking-normal">
                 <span style={{ color: "#0B3C64" }}>malpe</span><span style={{ color: "#3CB4E5" }}>OS</span>
               </span>
             </div>
@@ -101,7 +101,7 @@ export function NavSidebar() {
           </SheetContent>
         </Sheet>
         <Anchor className="mr-2 h-5 w-5 text-primary" />
-        <span className="font-heading text-lg font-bold tracking-normal">
+        <span className="font-heading text-xl font-bold tracking-normal">
           <span style={{ color: "#0B3C64" }}>malpe</span><span style={{ color: "#3CB4E5" }}>OS</span>
         </span>
       </div>
