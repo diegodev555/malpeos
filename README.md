@@ -9,7 +9,7 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-real-anon-key
 ```
 
-Then run `supabase_schema.sql` in the Supabase SQL editor to create the tables, view, triggers, and seed boats. Restart the dev server after changing `.env.local`.
+Then run `supabase_schema.sql` in the Supabase SQL editor to create the tables, row-level security policies, view, triggers, and seed boats. Restart the dev server after changing `.env.local`.
 
 ## Getting Started
 

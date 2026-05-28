@@ -56,6 +56,72 @@ CREATE INDEX IF NOT EXISTS idx_expenses_trip_id ON expenses(trip_id);
 CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category);
 
 -- ============================================================
+-- ROW LEVEL SECURITY POLICIES
+-- This app currently uses the public anon key without user login,
+-- so anon users need CRUD access to the fleet tables.
+-- ============================================================
+ALTER TABLE boats ENABLE ROW LEVEL SECURITY;
+ALTER TABLE trips ENABLE ROW LEVEL SECURITY;
+ALTER TABLE catch_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow anon read boats" ON boats;
+DROP POLICY IF EXISTS "Allow anon insert boats" ON boats;
+DROP POLICY IF EXISTS "Allow anon update boats" ON boats;
+DROP POLICY IF EXISTS "Allow anon delete boats" ON boats;
+
+CREATE POLICY "Allow anon read boats"
+  ON boats FOR SELECT TO anon USING (true);
+CREATE POLICY "Allow anon insert boats"
+  ON boats FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "Allow anon update boats"
+  ON boats FOR UPDATE TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "Allow anon delete boats"
+  ON boats FOR DELETE TO anon USING (true);
+
+DROP POLICY IF EXISTS "Allow anon read trips" ON trips;
+DROP POLICY IF EXISTS "Allow anon insert trips" ON trips;
+DROP POLICY IF EXISTS "Allow anon update trips" ON trips;
+DROP POLICY IF EXISTS "Allow anon delete trips" ON trips;
+
+CREATE POLICY "Allow anon read trips"
+  ON trips FOR SELECT TO anon USING (true);
+CREATE POLICY "Allow anon insert trips"
+  ON trips FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "Allow anon update trips"
+  ON trips FOR UPDATE TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "Allow anon delete trips"
+  ON trips FOR DELETE TO anon USING (true);
+
+DROP POLICY IF EXISTS "Allow anon read catch logs" ON catch_logs;
+DROP POLICY IF EXISTS "Allow anon insert catch logs" ON catch_logs;
+DROP POLICY IF EXISTS "Allow anon update catch logs" ON catch_logs;
+DROP POLICY IF EXISTS "Allow anon delete catch logs" ON catch_logs;
+
+CREATE POLICY "Allow anon read catch logs"
+  ON catch_logs FOR SELECT TO anon USING (true);
+CREATE POLICY "Allow anon insert catch logs"
+  ON catch_logs FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "Allow anon update catch logs"
+  ON catch_logs FOR UPDATE TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "Allow anon delete catch logs"
+  ON catch_logs FOR DELETE TO anon USING (true);
+
+DROP POLICY IF EXISTS "Allow anon read expenses" ON expenses;
+DROP POLICY IF EXISTS "Allow anon insert expenses" ON expenses;
+DROP POLICY IF EXISTS "Allow anon update expenses" ON expenses;
+DROP POLICY IF EXISTS "Allow anon delete expenses" ON expenses;
+
+CREATE POLICY "Allow anon read expenses"
+  ON expenses FOR SELECT TO anon USING (true);
+CREATE POLICY "Allow anon insert expenses"
+  ON expenses FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "Allow anon update expenses"
+  ON expenses FOR UPDATE TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "Allow anon delete expenses"
+  ON expenses FOR DELETE TO anon USING (true);
+
+-- ============================================================
 -- VIEW: Trip Summary (denormalized for quick dashboard queries)
 -- ============================================================
 CREATE OR REPLACE VIEW trip_summary AS

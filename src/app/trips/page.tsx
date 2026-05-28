@@ -70,7 +70,7 @@ export default function TripsPage() {
           <h1>Trips</h1>
           <p className="text-muted-foreground">All fishing trips</p>
         </div>
-        <Button render={<Link href="/trips/new" />}>
+        <Button nativeButton={false} render={<Link href="/trips/new" />}>
           <PlusCircle className="h-4 w-4 mr-2" />
           New Trip
         </Button>
