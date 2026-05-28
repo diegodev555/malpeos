@@ -17,7 +17,7 @@ import Link from "next/link";
 import { PlusCircle } from "lucide-react";
 
 interface TripRow {
-  id: string;
+  trip_id: string;
   boat_name: string;
   start_date: string;
   end_date: string | null;
@@ -102,7 +102,7 @@ export default function TripsPage() {
               </TableHeader>
               <TableBody>
                 {trips.map((trip) => (
-                  <TableRow key={trip.id}>
+                  <TableRow key={trip.trip_id}>
                     <TableCell className="font-medium">
                       {trip.boat_name}
                     </TableCell>
