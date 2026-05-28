@@ -12,6 +12,12 @@ import type { Boat, TripSummary } from "@/types/database";
 
 const BUCKET_NAME = "boat-images";
 
+function formatDate(dateStr: string) {
+  const d = new Date(dateStr);
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
 interface BoatProfileData {
   boat: Boat;
   total_trips: number;
@@ -304,7 +310,7 @@ export default function BoatProfilePage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold">
-                        {new Date(trip.start_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                        {formatDate(trip.start_date)}
                       </span>
                       <Badge variant={trip.status === "active" ? "default" : "secondary"} className="text-[10px] px-2 py-0">
                         {trip.status}
