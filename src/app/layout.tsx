@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { NavSidebar } from "@/components/nav-sidebar";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,11 +31,13 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex">
-        <NavSidebar />
-        <main className="flex-1 p-6 overflow-auto">
-          {children}
-        </main>
-        <Toaster />
+        <TooltipProvider>
+          <NavSidebar />
+          <main className="flex-1 p-4 md:p-6 overflow-auto pt-20 md:pt-6">
+            {children}
+          </main>
+          <Toaster />
+        </TooltipProvider>
       </body>
     </html>
   );
