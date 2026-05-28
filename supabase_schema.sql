@@ -1,0 +1,118 @@
+-- ============================================================
+-- MalpeOS - Fleet Management & Financial Tracking for Fishing
+-- Supabase PostgreSQL Schema
+-- ============================================================
+
+-- 1. BOATS TABLE
+CREATE TABLE IF NOT EXISTS boats (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  registration TEXT NOT NULL UNIQUE,
+  engine_details TEXT,
+  created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+-- 2. TRIPS TABLE
+CREATE TABLE IF NOT EXISTS trips (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  boat_id UUID NOT NULL REFERENCES boats(id) ON DELETE CASCADE,
+  start_date DATE NOT NULL,
+  end_date DATE,
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'completed')),
+  created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+-- 3. CATCH LOGS TABLE
+CREATE TABLE IF NOT EXISTS catch_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  trip_id UUID NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+  species TEXT NOT NULL,
+  weight_kg NUMERIC(10,2) NOT NULL CHECK (weight_kg > 0),
+  price_per_kg NUMERIC(10,2) NOT NULL CHECK (price_per_kg >= 0),
+  created_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+-- 4. EXPENSES TABLE
+CREATE TABLE IF NOT EXISTS expenses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  trip_id UUID NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+  category TEXT NOT NULL CHECK (category IN ('Fuel', 'Maintenance', 'Port Fees', 'Wages', 'Ice', 'Other')),
+  base_amount NUMERIC(12,2) NOT NULL CHECK (base_amount >= 0),
+  gst_amount NUMERIC(12,2) NOT NULL DEFAULT 0 CHECK (gst_amount >= 0),
+  description TEXT,
+  created_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+-- ============================================================
+-- INDEXES for performance
+-- ============================================================
+CREATE INDEX IF NOT EXISTS idx_trips_boat_id ON trips(boat_id);
+CREATE INDEX IF NOT EXISTS idx_trips_status ON trips(status);
+CREATE INDEX IF NOT EXISTS idx_trips_dates ON trips(start_date, end_date);
+CREATE INDEX IF NOT EXISTS idx_catch_logs_trip_id ON catch_logs(trip_id);
+CREATE INDEX IF NOT EXISTS idx_expenses_trip_id ON expenses(trip_id);
+CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category);
+
+-- ============================================================
+-- VIEW: Trip Summary (denormalized for quick dashboard queries)
+-- ============================================================
+CREATE OR REPLACE VIEW trip_summary AS
+SELECT
+  t.id AS trip_id,
+  t.boat_id,
+  b.name AS boat_name,
+  t.start_date,
+  t.end_date,
+  t.status,
+  COALESCE(cl.total_gross_revenue, 0) AS gross_revenue,
+  COALESCE(e.total_base_amount, 0) AS total_base_expense,
+  COALESCE(e.total_gst, 0) AS total_gst_paid,
+  COALESCE(e.total_base_amount, 0) + COALESCE(e.total_gst, 0) AS total_expense,
+  COALESCE(cl.total_gross_revenue, 0) - (COALESCE(e.total_base_amount, 0) + COALESCE(e.total_gst, 0)) AS net_profit
+FROM trips t
+JOIN boats b ON b.id = t.boat_id
+LEFT JOIN (
+  SELECT
+    trip_id,
+    SUM(weight_kg * price_per_kg) AS total_gross_revenue
+  FROM catch_logs
+  GROUP BY trip_id
+) cl ON cl.trip_id = t.id
+LEFT JOIN (
+  SELECT
+    trip_id,
+    SUM(base_amount) AS total_base_amount,
+    SUM(gst_amount) AS total_gst
+  FROM expenses
+  GROUP BY trip_id
+) e ON e.trip_id = t.id;
+
+-- ============================================================
+-- TRIGGER: auto-update updated_at timestamp
+-- ============================================================
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_boats_updated_at
+  BEFORE UPDATE ON boats
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER trg_trips_updated_at
+  BEFORE UPDATE ON trips
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ============================================================
+-- SEED DATA: Sample boats
+-- ============================================================
+INSERT INTO boats (name, registration, engine_details) VALUES
+  ('Sea Queen', 'IND-MP-2024-001', 'Leyland Iron Boat - 120HP'),
+  ('Wave Dancer', 'IND-MP-2024-002', 'Ashok Leyland - 95HP'),
+  ('Fish King', 'IND-MP-2024-003', 'Cummins Marine - 150HP')
+ON CONFLICT (registration) DO NOTHING;
