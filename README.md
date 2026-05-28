@@ -1,4 +1,15 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+This is a [Next.js](https://nextjs.org) fleet management app for MalpeOS.
+
+## Supabase setup
+
+Create `.env.local` from `.env.local.example` and replace both placeholder values with the API settings from your Supabase project:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-real-anon-key
+```
+
+Then run `supabase_schema.sql` in the Supabase SQL editor to create the tables, view, triggers, and seed boats. Restart the dev server after changing `.env.local`.
 
 ## Getting Started
 
@@ -17,8 +28,6 @@ bun dev
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More
 

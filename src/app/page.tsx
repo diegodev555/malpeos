@@ -40,6 +40,19 @@ const CATEGORY_COLORS: Record<string, string> = {
   Other: "#6b7280",
 };
 
+function getErrorMessage(err: unknown) {
+  if (err instanceof Error) {
+    return err.message;
+  }
+
+  if (err && typeof err === "object" && "message" in err) {
+    const message = String(err.message);
+    return message || "Failed to load data";
+  }
+
+  return "Failed to load data";
+}
+
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -127,24 +140,24 @@ export default function DashboardPage() {
           .select("category, base_amount, gst_amount")
           .in("trip_id", ytdTripIds);
 
-        if (!expenseError && expenseData) {
-          const categoryTotals = new Map<string, number>();
-          expenseData.forEach((e) => {
-            const total = Number(e.base_amount) + Number(e.gst_amount);
-            const current = categoryTotals.get(e.category) || 0;
-            categoryTotals.set(e.category, current + total);
-          });
+        if (expenseError) throw expenseError;
 
-          const pieData: CategoryExpense[] = Array.from(categoryTotals.entries())
-            .map(([name, value]) => ({
-              name,
-              value: Math.round(value * 100) / 100,
-              color: CATEGORY_COLORS[name] || "#6b7280",
-            }))
-            .sort((a, b) => b.value - a.value);
+        const categoryTotals = new Map<string, number>();
+        (expenseData || []).forEach((e) => {
+          const total = Number(e.base_amount) + Number(e.gst_amount);
+          const current = categoryTotals.get(e.category) || 0;
+          categoryTotals.set(e.category, current + total);
+        });
 
-          setCategoryData(pieData);
-        }
+        const pieData: CategoryExpense[] = Array.from(categoryTotals.entries())
+          .map(([name, value]) => ({
+            name,
+            value: Math.round(value * 100) / 100,
+            color: CATEGORY_COLORS[name] || "#6b7280",
+          }))
+          .sort((a, b) => b.value - a.value);
+
+        setCategoryData(pieData);
       }
 
       // Count active trips
@@ -164,7 +177,7 @@ export default function DashboardPage() {
         activeTrips: count || 0,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load data");
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
