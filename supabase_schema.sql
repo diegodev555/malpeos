@@ -45,6 +45,17 @@ CREATE TABLE IF NOT EXISTS expenses (
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
+-- 5. TRIP BILLS / ATTACHMENTS TABLE
+CREATE TABLE IF NOT EXISTS trip_bills (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  trip_id UUID NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+  file_name TEXT NOT NULL,
+  file_type TEXT NOT NULL,
+  file_size INTEGER NOT NULL,
+  storage_path TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
 -- ============================================================
 -- INDEXES for performance
 -- ============================================================
@@ -54,6 +65,30 @@ CREATE INDEX IF NOT EXISTS idx_trips_dates ON trips(start_date, end_date);
 CREATE INDEX IF NOT EXISTS idx_catch_logs_trip_id ON catch_logs(trip_id);
 CREATE INDEX IF NOT EXISTS idx_expenses_trip_id ON expenses(trip_id);
 CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category);
+CREATE INDEX IF NOT EXISTS idx_trip_bills_trip_id ON trip_bills(trip_id);
+
+-- ============================================================
+-- STORAGE: trip-bills bucket + anon upload policies
+-- Run in Supabase SQL Editor (not via migration) if bucket doesn't exist
+-- ============================================================
+-- INSERT INTO storage.buckets (id, name, public)
+-- VALUES ('trip-bills', 'trip-bills', true)
+-- ON CONFLICT (id) DO NOTHING;
+--
+-- DROP POLICY IF EXISTS "anon_upload_trip_bills" ON storage.objects;
+-- CREATE POLICY "anon_upload_trip_bills"
+--   ON storage.objects FOR INSERT TO anon
+--   WITH CHECK (bucket_id = 'trip-bills');
+--
+-- DROP POLICY IF EXISTS "anon_read_trip_bills" ON storage.objects;
+-- CREATE POLICY "anon_read_trip_bills"
+--   ON storage.objects FOR SELECT TO anon
+--   USING (bucket_id = 'trip-bills');
+--
+-- DROP POLICY IF EXISTS "anon_delete_trip_bills" ON storage.objects;
+-- CREATE POLICY "anon_delete_trip_bills"
+--   ON storage.objects FOR DELETE TO anon
+--   USING (bucket_id = 'trip-bills');
 
 -- ============================================================
 -- ROW LEVEL SECURITY POLICIES
@@ -64,6 +99,7 @@ ALTER TABLE boats ENABLE ROW LEVEL SECURITY;
 ALTER TABLE trips ENABLE ROW LEVEL SECURITY;
 ALTER TABLE catch_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE trip_bills ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Allow anon read boats" ON boats;
 DROP POLICY IF EXISTS "Allow anon insert boats" ON boats;
@@ -120,6 +156,20 @@ CREATE POLICY "Allow anon update expenses"
   ON expenses FOR UPDATE TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "Allow anon delete expenses"
   ON expenses FOR DELETE TO anon USING (true);
+
+DROP POLICY IF EXISTS "Allow anon read trip_bills" ON trip_bills;
+DROP POLICY IF EXISTS "Allow anon insert trip_bills" ON trip_bills;
+DROP POLICY IF EXISTS "Allow anon update trip_bills" ON trip_bills;
+DROP POLICY IF EXISTS "Allow anon delete trip_bills" ON trip_bills;
+
+CREATE POLICY "Allow anon read trip_bills"
+  ON trip_bills FOR SELECT TO anon USING (true);
+CREATE POLICY "Allow anon insert trip_bills"
+  ON trip_bills FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "Allow anon update trip_bills"
+  ON trip_bills FOR UPDATE TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "Allow anon delete trip_bills"
+  ON trip_bills FOR DELETE TO anon USING (true);
 
 -- ============================================================
 -- VIEW: Trip Summary (denormalized for quick dashboard queries)

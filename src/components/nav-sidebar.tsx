@@ -12,6 +12,7 @@ import {
   Fish,
   Menu,
   Anchor,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -20,6 +21,7 @@ const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/trips", label: "Trips", icon: Fish },
   { href: "/trips/new", label: "Log a Trip", icon: PlusCircle },
+  { href: "/trips/bills", label: "Bills", icon: FileText },
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/boats", label: "Fleet Manager", icon: Ship },
 ];

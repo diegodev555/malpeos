@@ -36,6 +36,16 @@ export interface Expense {
   created_at: string;
 }
 
+export interface TripBill {
+  id: string;
+  trip_id: string;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  storage_path: string;
+  created_at: string;
+}
+
 export interface TripSummary {
   trip_id: string;
   boat_id: string;
