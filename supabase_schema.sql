@@ -57,6 +57,30 @@ CREATE TABLE IF NOT EXISTS trip_bills (
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
+-- 6. PARTIES / ACCOUNTS TABLE (vendors, crew, suppliers)
+CREATE TABLE IF NOT EXISTS parties (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  type TEXT NOT NULL DEFAULT 'vendor' CHECK (type IN ('vendor', 'crew', 'supplier', 'other')),
+  contact TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+-- 7. LEDGER ENTRIES TABLE (tracking financial transactions per party, optionally per boat/trip)
+CREATE TABLE IF NOT EXISTS ledger_entries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  party_id UUID NOT NULL REFERENCES parties(id) ON DELETE CASCADE,
+  boat_id UUID REFERENCES boats(id) ON DELETE SET NULL,
+  trip_id UUID REFERENCES trips(id) ON DELETE SET NULL,
+  entry_type TEXT NOT NULL CHECK (entry_type IN ('debit', 'credit')),
+  amount NUMERIC(12,2) NOT NULL CHECK (amount >= 0),
+  description TEXT,
+  entry_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  created_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
 -- ============================================================
 -- INDEXES for performance
 -- ============================================================
@@ -67,6 +91,10 @@ CREATE INDEX IF NOT EXISTS idx_catch_logs_trip_id ON catch_logs(trip_id);
 CREATE INDEX IF NOT EXISTS idx_expenses_trip_id ON expenses(trip_id);
 CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category);
 CREATE INDEX IF NOT EXISTS idx_trip_bills_trip_id ON trip_bills(trip_id);
+CREATE INDEX IF NOT EXISTS idx_ledger_entries_party_id ON ledger_entries(party_id);
+CREATE INDEX IF NOT EXISTS idx_ledger_entries_boat_id ON ledger_entries(boat_id);
+CREATE INDEX IF NOT EXISTS idx_ledger_entries_trip_id ON ledger_entries(trip_id);
+CREATE INDEX IF NOT EXISTS idx_ledger_entries_entry_date ON ledger_entries(entry_date);
 
 -- ============================================================
 -- STORAGE: trip-bills bucket + anon upload policies
@@ -101,7 +129,10 @@ ALTER TABLE trips ENABLE ROW LEVEL SECURITY;
 ALTER TABLE catch_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE trip_bills ENABLE ROW LEVEL SECURITY;
+ALTER TABLE parties ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ledger_entries ENABLE ROW LEVEL SECURITY;
 
+-- Boats policies
 DROP POLICY IF EXISTS "Allow anon read boats" ON boats;
 DROP POLICY IF EXISTS "Allow anon insert boats" ON boats;
 DROP POLICY IF EXISTS "Allow anon update boats" ON boats;
@@ -116,6 +147,7 @@ CREATE POLICY "Allow anon update boats"
 CREATE POLICY "Allow anon delete boats"
   ON boats FOR DELETE TO anon USING (true);
 
+-- Trips policies
 DROP POLICY IF EXISTS "Allow anon read trips" ON trips;
 DROP POLICY IF EXISTS "Allow anon insert trips" ON trips;
 DROP POLICY IF EXISTS "Allow anon update trips" ON trips;
@@ -130,6 +162,7 @@ CREATE POLICY "Allow anon update trips"
 CREATE POLICY "Allow anon delete trips"
   ON trips FOR DELETE TO anon USING (true);
 
+-- Catch logs policies
 DROP POLICY IF EXISTS "Allow anon read catch logs" ON catch_logs;
 DROP POLICY IF EXISTS "Allow anon insert catch logs" ON catch_logs;
 DROP POLICY IF EXISTS "Allow anon update catch logs" ON catch_logs;
@@ -144,6 +177,7 @@ CREATE POLICY "Allow anon update catch logs"
 CREATE POLICY "Allow anon delete catch logs"
   ON catch_logs FOR DELETE TO anon USING (true);
 
+-- Expenses policies
 DROP POLICY IF EXISTS "Allow anon read expenses" ON expenses;
 DROP POLICY IF EXISTS "Allow anon insert expenses" ON expenses;
 DROP POLICY IF EXISTS "Allow anon update expenses" ON expenses;
@@ -158,6 +192,7 @@ CREATE POLICY "Allow anon update expenses"
 CREATE POLICY "Allow anon delete expenses"
   ON expenses FOR DELETE TO anon USING (true);
 
+-- Trip bills policies
 DROP POLICY IF EXISTS "Allow anon read trip_bills" ON trip_bills;
 DROP POLICY IF EXISTS "Allow anon insert trip_bills" ON trip_bills;
 DROP POLICY IF EXISTS "Allow anon update trip_bills" ON trip_bills;
@@ -171,6 +206,36 @@ CREATE POLICY "Allow anon update trip_bills"
   ON trip_bills FOR UPDATE TO anon USING (true) WITH CHECK (true);
 CREATE POLICY "Allow anon delete trip_bills"
   ON trip_bills FOR DELETE TO anon USING (true);
+
+-- Parties policies
+DROP POLICY IF EXISTS "Allow anon read parties" ON parties;
+DROP POLICY IF EXISTS "Allow anon insert parties" ON parties;
+DROP POLICY IF EXISTS "Allow anon update parties" ON parties;
+DROP POLICY IF EXISTS "Allow anon delete parties" ON parties;
+
+CREATE POLICY "Allow anon read parties"
+  ON parties FOR SELECT TO anon USING (true);
+CREATE POLICY "Allow anon insert parties"
+  ON parties FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "Allow anon update parties"
+  ON parties FOR UPDATE TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "Allow anon delete parties"
+  ON parties FOR DELETE TO anon USING (true);
+
+-- Ledger entries policies (includes boat_id field)
+DROP POLICY IF EXISTS "Allow anon read ledger_entries" ON ledger_entries;
+DROP POLICY IF EXISTS "Allow anon insert ledger_entries" ON ledger_entries;
+DROP POLICY IF EXISTS "Allow anon update ledger_entries" ON ledger_entries;
+DROP POLICY IF EXISTS "Allow anon delete ledger_entries" ON ledger_entries;
+
+CREATE POLICY "Allow anon read ledger_entries"
+  ON ledger_entries FOR SELECT TO anon USING (true);
+CREATE POLICY "Allow anon insert ledger_entries"
+  ON ledger_entries FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "Allow anon update ledger_entries"
+  ON ledger_entries FOR UPDATE TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "Allow anon delete ledger_entries"
+  ON ledger_entries FOR DELETE TO anon USING (true);
 
 -- ============================================================
 -- VIEW: Trip Summary (denormalized for quick dashboard queries)
@@ -225,6 +290,10 @@ CREATE TRIGGER trg_trips_updated_at
   BEFORE UPDATE ON trips
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
+CREATE TRIGGER trg_parties_updated_at
+  BEFORE UPDATE ON parties
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
 -- ============================================================
 -- VIEW: Boat Summary (aggregated financials per boat)
 -- ============================================================
@@ -275,10 +344,16 @@ GROUP BY b.id, b.name, b.registration, b.engine_details, b.image_url;
 --   USING (bucket_id = 'boat-images');
 
 -- ============================================================
--- SEED DATA: Sample boats
+-- SEED DATA: Sample boats and parties
 -- ============================================================
 INSERT INTO boats (name, registration, engine_details, image_url) VALUES
   ('Sea Queen', 'IND-MP-2024-001', 'Leyland Iron Boat - 120HP', NULL),
   ('Wave Dancer', 'IND-MP-2024-002', 'Ashok Leyland - 95HP', NULL),
   ('Fish King', 'IND-MP-2024-003', 'Cummins Marine - 150HP', NULL)
 ON CONFLICT (registration) DO NOTHING;
+
+INSERT INTO parties (name, type, contact, notes) VALUES
+  ('Harbor Marine Services', 'vendor', '+91-9876543210', 'Dry dock and maintenance'),
+  ('Fish Market Co-op', 'supplier', '+91-9876543211', 'Ice and supplies'),
+  ('Deckhand Ramesh', 'crew', NULL, 'Regular crew member')
+ON CONFLICT DO NOTHING;

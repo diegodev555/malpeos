@@ -61,6 +61,39 @@ export interface TripSummary {
   net_profit: number;
 }
 
+// Party / Account types
+export interface Party {
+  id: string;
+  name: string;
+  type: "vendor" | "crew" | "supplier" | "other";
+  contact: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LedgerEntry {
+  id: string;
+  party_id: string;
+  boat_id: string | null;
+  trip_id: string | null;
+  entry_type: "debit" | "credit";
+  amount: number;
+  description: string | null;
+  entry_date: string;
+  created_at: string;
+}
+
+// Ledger entry with joined boat and trip data
+export interface LedgerEntryWithRelations extends LedgerEntry {
+  boats: Pick<Boat, "id" | "name"> | null;
+  trips: Pick<Trip, "id" | "start_date" | "end_date"> | null;
+}
+
+export interface PartyWithBalance extends Party {
+  balance: number; // positive = they owe us (credits - debits), negative = we owe them
+}
+
 // Form input types (for creating/updating records)
 export interface TripFormData {
   boat_id: string;

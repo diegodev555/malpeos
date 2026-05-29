@@ -26,9 +26,17 @@ import { toast } from "sonner";
 import { PlusCircle, Pencil, Trash2, Ship, ExternalLink } from "lucide-react";
 import type { Boat } from "@/types/database";
 
+// Track per-boat maintenance dues from ledger_entries
+interface BoatLedgerDues {
+  boat_id: string;
+  net_dues: number; // positive = we owe them (debits exceed credits)
+}
+
 export default function BoatsPage() {
   const router = useRouter();
+  const supabase = getSupabaseClient();
   const [boats, setBoats] = useState<Boat[]>([]);
+  const [ledgerDues, setLedgerDues] = useState<Map<string, number>>(new Map());
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBoat, setEditingBoat] = useState<Boat | null>(null);
@@ -36,12 +44,12 @@ export default function BoatsPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetchBoats();
+    fetchBoatsAndDues();
   }, []);
 
-  async function fetchBoats() {
+  async function fetchBoatsAndDues() {
     try {
-      const supabase = getSupabaseClient();
+      // Fetch boats
       const { data, error } = await supabase
         .from("boats")
         .select("*")
@@ -49,6 +57,26 @@ export default function BoatsPage() {
 
       if (error) throw error;
       setBoats(data || []);
+
+      // Fetch ledger entries aggregated by boat_id to compute maintenance dues
+      const { data: ledgerData, error: ledgerError } = await supabase
+        .from("ledger_entries")
+        .select("boat_id, entry_type, amount")
+        .not("boat_id", "is", null);
+
+      if (ledgerError) throw ledgerError;
+
+      // Compute net dues per boat: debits (what we owe) - credits (what we paid)
+      const duesMap = new Map<string, number>();
+      (ledgerData || []).forEach((entry) => {
+        const current = duesMap.get(entry.boat_id) || 0;
+        if (entry.entry_type === "debit") {
+          duesMap.set(entry.boat_id, current + Number(entry.amount));
+        } else {
+          duesMap.set(entry.boat_id, current - Number(entry.amount));
+        }
+      });
+      setLedgerDues(duesMap);
     } catch (err) {
       console.error("Failed to fetch boats:", err);
       toast.error("Failed to load boats");
@@ -106,7 +134,7 @@ export default function BoatsPage() {
       }
 
       setDialogOpen(false);
-      fetchBoats();
+      fetchBoatsAndDues();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save boat");
     } finally {
@@ -124,7 +152,7 @@ export default function BoatsPage() {
       const { error } = await supabase.from("boats").delete().eq("id", boat.id);
       if (error) throw error;
       toast.success("Boat removed");
-      fetchBoats();
+      fetchBoatsAndDues();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to delete boat");
     }
@@ -161,6 +189,7 @@ export default function BoatsPage() {
                   <TableHead>Name</TableHead>
                   <TableHead>Registration</TableHead>
                   <TableHead>Engine Details</TableHead>
+                  <TableHead className="text-right">Maintenance Dues</TableHead>
                   <TableHead className="w-[100px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -181,6 +210,27 @@ export default function BoatsPage() {
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {boat.engine_details || "—"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {ledgerDues.has(boat.id) ? (
+                        <span
+                          className={`font-medium ${
+                            (ledgerDues.get(boat.id) || 0) > 0
+                              ? "text-red-600"
+                              : "text-green-600"
+                          }`}
+                        >
+                          {new Intl.NumberFormat("en-IN", {
+                            style: "currency",
+                            currency: "INR",
+                            maximumFractionDigits: 0,
+                          }).format(ledgerDues.get(boat.id) || 0)}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">
+                          —
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
