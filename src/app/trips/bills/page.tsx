@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { getSupabaseClient } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -12,7 +12,13 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Upload, FileText, Trash2, Download, File, Image, FileSpreadsheet, Database, Settings } from "lucide-react";
+import { Upload, FileText, Trash2, Download, File, Image, FileSpreadsheet, Database, Settings, Eye, X, Expand } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { TripBill, Trip } from "@/types/database";
 
 const ALLOWED_TYPES = [
@@ -46,6 +52,95 @@ function formatFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function PreviewDialog({ bill, open, onOpenChange }: { bill: TripBill | null; open: boolean; onOpenChange: (o: boolean) => void }) {
+  const supabase = getSupabaseClient();
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const isImage = bill?.file_type.startsWith("image/");
+  const isPdf = bill?.file_type === "application/pdf";
+
+  useEffect(() => {
+    if (!open || !bill) {
+      setPreviewUrl(null);
+      setError(null);
+      return;
+    }
+
+    async function loadPreview() {
+      if (!bill) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const { data, error: downloadError } = await supabase.storage
+          .from("trip-bills")
+          .download(bill.storage_path);
+
+        if (downloadError) throw downloadError;
+        if (!data) throw new Error("No data returned");
+
+        const url = URL.createObjectURL(data);
+        setPreviewUrl(url);
+      } catch (err) {
+        console.error("Preview failed:", err);
+        setError("Failed to load preview");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    void loadPreview();
+
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [open, bill?.id]);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-4xl h-[90vh] flex flex-col">
+        <DialogHeader className="flex flex-row items-center justify-between shrink-0">
+          <DialogTitle className="truncate text-base">
+            {bill?.file_name || "Preview"}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="flex-1 min-h-0 flex items-center justify-center bg-muted/20 rounded-lg overflow-hidden">
+          {loading ? (
+            <div className="text-muted-foreground">Loading preview...</div>
+          ) : error ? (
+            <div className="text-center space-y-3">
+              <p className="text-destructive text-sm">{error}</p>
+              <p className="text-xs text-muted-foreground">Try downloading the file instead</p>
+            </div>
+          ) : previewUrl && isImage ? (
+            <div className="w-full h-full flex items-center justify-center p-4">
+              <img
+                src={previewUrl}
+                alt={bill?.file_name || "Preview"}
+                className="max-w-full max-h-full object-contain rounded-lg"
+              />
+            </div>
+          ) : previewUrl && isPdf ? (
+            <iframe
+              src={previewUrl}
+              className="w-full h-full rounded-lg"
+              title={bill?.file_name || "PDF Preview"}
+            />
+          ) : previewUrl ? (
+            <div className="text-center space-y-3 p-8">
+              <FileText className="h-12 w-12 mx-auto text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
+                Preview not available for this file type
+              </p>
+            </div>
+          ) : null}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function BillsPage() {
   const supabase = getSupabaseClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -55,6 +150,8 @@ export default function BillsPage() {
   const [loading, setLoading] = useState(true);
   const [billsLoading, setBillsLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [previewBillId, setPreviewBillId] = useState<string | null>(null);
+  const previewBill = previewBillId ? bills.find(b => b.id === previewBillId) || null : null;
   const [needsSetup, setNeedsSetup] = useState(false);
   const [setupStep, setSetupStep] = useState<"table" | "bucket" | null>(null);
 
@@ -510,6 +607,14 @@ USING (bucket_id = 'trip-bills');`}
                         <Button
                           variant="ghost"
                           size="icon"
+                          onClick={() => setPreviewBillId(bill.id)}
+                          title="Preview"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => handleDownload(bill)}
                           title="Download"
                         >
@@ -533,6 +638,13 @@ USING (bucket_id = 'trip-bills');`}
           </Card>
         </>
       )}
+
+      {/* Preview Dialog */}
+      <PreviewDialog
+        bill={previewBill}
+        open={previewBillId !== null}
+        onOpenChange={(o) => { if (!o) setPreviewBillId(null); }}
+      />
     </div>
   );
 }
