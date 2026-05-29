@@ -54,48 +54,21 @@ function formatFileSize(bytes: number) {
 
 function PreviewDialog({ bill, open, onOpenChange }: { bill: TripBill | null; open: boolean; onOpenChange: (o: boolean) => void }) {
   const supabase = getSupabaseClient();
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
   const isImage = bill?.file_type.startsWith("image/");
   const isPdf = bill?.file_type === "application/pdf";
 
+  // Use public URL directly — bucket is public
+  const publicUrl = bill
+    ? supabase.storage.from("trip-bills").getPublicUrl(bill.storage_path).data.publicUrl
+    : null;
+
   useEffect(() => {
-    if (!open || !bill) {
-      setPreviewUrl(null);
-      setError(null);
-      return;
+    if (!open) {
+      setLoadError(false);
     }
-
-    async function loadPreview() {
-      if (!bill) return;
-      setLoading(true);
-      setError(null);
-      try {
-        const { data, error: downloadError } = await supabase.storage
-          .from("trip-bills")
-          .download(bill.storage_path);
-
-        if (downloadError) throw downloadError;
-        if (!data) throw new Error("No data returned");
-
-        const url = URL.createObjectURL(data);
-        setPreviewUrl(url);
-      } catch (err) {
-        console.error("Preview failed:", err);
-        setError("Failed to load preview");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    void loadPreview();
-
-    return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-    };
-  }, [open, bill?.id]);
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -106,35 +79,47 @@ function PreviewDialog({ bill, open, onOpenChange }: { bill: TripBill | null; op
           </DialogTitle>
         </DialogHeader>
         <div className="flex-1 min-h-0 flex items-center justify-center bg-muted/20 rounded-lg overflow-hidden">
-          {loading ? (
-            <div className="text-muted-foreground">Loading preview...</div>
-          ) : error ? (
-            <div className="text-center space-y-3">
-              <p className="text-destructive text-sm">{error}</p>
-              <p className="text-xs text-muted-foreground">Try downloading the file instead</p>
+          {!publicUrl ? (
+            <div className="text-center space-y-3 p-8">
+              <FileText className="h-12 w-12 mx-auto text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
+                No preview available
+              </p>
             </div>
-          ) : previewUrl && isImage ? (
+          ) : isImage ? (
             <div className="w-full h-full flex items-center justify-center p-4">
               <img
-                src={previewUrl}
+                src={publicUrl}
                 alt={bill?.file_name || "Preview"}
                 className="max-w-full max-h-full object-contain rounded-lg"
+                onError={() => setLoadError(true)}
               />
             </div>
-          ) : previewUrl && isPdf ? (
+          ) : isPdf ? (
             <iframe
-              src={previewUrl}
+              src={publicUrl}
               className="w-full h-full rounded-lg"
               title={bill?.file_name || "PDF Preview"}
+              onError={() => setLoadError(true)}
             />
-          ) : previewUrl ? (
+          ) : (
             <div className="text-center space-y-3 p-8">
               <FileText className="h-12 w-12 mx-auto text-muted-foreground" />
               <p className="text-sm text-muted-foreground">
                 Preview not available for this file type
               </p>
+              <p className="text-xs text-muted-foreground">
+                Try downloading the file instead
+              </p>
             </div>
-          ) : null}
+          )}
+          {loadError && (
+            <div className="absolute bottom-4 left-4 right-4 text-center">
+              <p className="text-destructive text-sm bg-background/80 rounded-lg p-2">
+                Failed to load preview
+              </p>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
