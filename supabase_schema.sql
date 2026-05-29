@@ -240,7 +240,7 @@ CREATE POLICY "Allow anon delete ledger_entries"
 -- ============================================================
 -- VIEW: Trip Summary (denormalized for quick dashboard queries)
 -- ============================================================
-CREATE OR REPLACE VIEW trip_summary AS
+CREATE OR REPLACE VIEW trip_summary WITH (security_invoker = true) AS
 SELECT
   t.id AS trip_id,
   t.boat_id,
@@ -297,7 +297,7 @@ CREATE TRIGGER trg_parties_updated_at
 -- ============================================================
 -- VIEW: Boat Summary (aggregated financials per boat)
 -- ============================================================
-CREATE OR REPLACE VIEW boat_summary AS
+CREATE OR REPLACE VIEW boat_summary WITH (security_invoker = true) AS
 SELECT
   b.id AS boat_id,
   b.name AS boat_name,
