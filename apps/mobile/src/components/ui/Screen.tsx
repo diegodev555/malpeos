@@ -73,6 +73,6 @@ export function Screen({
 const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 56 + 16,
   },
 });

@@ -41,7 +41,7 @@ export default function FleetScreen() {
   const renderBoat = ({ item }: { item: Boat }) => (
     <TouchableOpacity
       activeOpacity={0.7}
-      onPress={() => router.push(`/fleet/${item.id}`)}
+      onPress={() => router.push(`/screens/fleet/${item.id}` as any)}
     >
       <Card size="sm">
         <View style={styles.boatRow}>

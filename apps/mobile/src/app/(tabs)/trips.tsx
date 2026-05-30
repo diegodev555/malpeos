@@ -24,7 +24,7 @@ export default function TripsScreen() {
   const renderTrip = ({ item }: { item: TripRow }) => (
     <TouchableOpacity
       activeOpacity={0.7}
-      onPress={() => router.push(`/fleet/${item.boat_id}`)}
+      onPress={() => router.push(`/screens/fleet/${item.boat_id}` as any)}
     >
       <Card size="sm">
         <View style={styles.tripRow}>
@@ -82,9 +82,9 @@ export default function TripsScreen() {
           <Text style={styles.headerTitle}>Trips</Text>
           <Text style={styles.headerSubtitle}>All fishing trips</Text>
         </View>
-        <Button onPress={() => router.push("/(tabs)/trips/new")}>
-          New Trip
-        </Button>
+<Button onPress={() => router.push("/screens/trips/new" as any)}>
+           New Trip
+         </Button>
       </View>
 
       {error ? (
@@ -105,7 +105,7 @@ export default function TripsScreen() {
           title="No trips yet"
           message="Create your first trip to get started."
           actionLabel="New Trip"
-          onAction={() => router.push("/(tabs)/trips/new")}
+          onAction={() => router.push("/screens/trips/new" as any)}
         />
       ) : null}
     </Screen>

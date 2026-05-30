@@ -24,7 +24,7 @@ export default function AccountsScreen() {
   const renderParty = ({ item }: { item: PartyWithBalance }) => (
     <TouchableOpacity
       activeOpacity={0.7}
-      onPress={() => router.push(`../fleet/accounts/${item.id}`)}
+      onPress={() => router.push(`/screens/fleet/accounts/${item.id}` as any)}
     >
       <Card size="sm">
         <View style={styles.partyRow}>
@@ -56,7 +56,6 @@ export default function AccountsScreen() {
 
   return (
     <Screen onRefresh={refetch} refreshing={isLoading}>
-      {/* Header */}
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>Accounts</Text>

@@ -95,11 +95,7 @@ export function NavSidebar() {
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 100,
-    flexDirection: "row",
-  },
+  overlay: StyleSheet.absoluteFill,
   backdrop: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.3)",
