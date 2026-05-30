@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
   partyName: {
     fontSize: 22,
     fontWeight: "700",
-    color: theme.colors.foreground,
+    color: theme.colors.malpeosDark,
   },
   contactText: {
     fontSize: 13,
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 17,
     fontWeight: "600",
-    color: theme.colors.foreground,
+    color: theme.colors.malpeosDark,
     marginBottom: 8,
   },
   entryRow: {

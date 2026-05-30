@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
   boatName: {
     fontSize: 24,
     fontWeight: "700",
-    color: theme.colors.foreground,
+    color: theme.colors.malpeosDark,
   },
   boatMeta: {
     flexDirection: "row",
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 17,
     fontWeight: "600",
-    color: theme.colors.foreground,
+    color: theme.colors.malpeosDark,
     marginBottom: 8,
   },
   tripRow: {

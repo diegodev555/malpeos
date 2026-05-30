@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "700",
     letterSpacing: -0.5,
-    color: theme.colors.foreground,
+    color: theme.colors.malpeosDark,
   },
   headerSubtitle: {
     fontSize: 13,

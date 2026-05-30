@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   content: { padding: 16, paddingBottom: 40 },
   backButton: { fontSize: 15, color: theme.colors.primary, fontWeight: "600", marginBottom: 12 },
-  pageTitle: { fontSize: 28, fontWeight: "700", letterSpacing: -0.5, color: theme.colors.foreground },
+  pageTitle: { fontSize: 28, fontWeight: "700", letterSpacing: -0.5, color: theme.colors.malpeosDark },
   pageSubtitle: { fontSize: 13, color: theme.colors.mutedForeground, marginTop: 2, marginBottom: 16 },
   formGrid: { gap: 12 },
   fieldLabel: { fontSize: 12, fontWeight: "500", color: theme.colors.mutedForeground, marginBottom: 4 },
