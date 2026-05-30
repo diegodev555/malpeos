@@ -95,6 +95,10 @@ export default function BoatProfilePage() {
 
       const supabase = getSupabaseClient();
 
+      // Helper to format numbers for PDF (avoid ₹ symbol which has encoding issues in jsPDF)
+      const pdfCurrency = (value: number) =>
+        `Rs. ${value.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
+
       // Fetch all expenses for all trips of this boat
       const tripIds = profile.allTrips.map((t) => t.trip_id);
       const { data: expenseData, error: expenseError } = await supabase
@@ -122,7 +126,7 @@ export default function BoatProfilePage() {
 
       // Title
       doc.setFontSize(18);
-      doc.text(`Boat Expense Report`, 14, 20);
+      doc.text("Boat Expense Report", 14, 20);
       doc.setFontSize(12);
       doc.text(`${profile.boat.name} (${profile.boat.registration})`, 14, 28);
       doc.setFontSize(10);
@@ -153,7 +157,7 @@ export default function BoatProfilePage() {
         doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
         doc.text(
-          `Revenue: ${formatCurrency(trip.gross_revenue)}  |  Total Expense: ${formatCurrency(trip.total_expense)}  |  Net: ${formatCurrency(trip.net_profit)}`,
+          pdfCurrency(trip.gross_revenue) + "  Revenue | Expense: " + pdfCurrency(trip.total_expense) + " | Net: " + pdfCurrency(trip.net_profit),
           14,
           yOffset
         );
@@ -164,9 +168,9 @@ export default function BoatProfilePage() {
           const tableData = tripExpenses.map((e) => [
             e.category,
             e.description || "-",
-            formatCurrency(e.base_amount),
-            formatCurrency(e.gst_amount),
-            formatCurrency(e.base_amount + e.gst_amount),
+            pdfCurrency(e.base_amount),
+            pdfCurrency(e.gst_amount),
+            pdfCurrency(e.base_amount + e.gst_amount),
           ]);
 
           autoTable(doc, {
@@ -177,11 +181,11 @@ export default function BoatProfilePage() {
             headStyles: { fillColor: [59, 130, 246], fontSize: 9 },
             bodyStyles: { fontSize: 8 },
             columnStyles: {
-              0: { cellWidth: 28 },
-              1: { cellWidth: 65 },
-              2: { cellWidth: 35, halign: "right" },
-              3: { cellWidth: 30, halign: "right" },
-              4: { cellWidth: 35, halign: "right" },
+              0: { cellWidth: 30 },
+              1: { cellWidth: 70 },
+              2: { cellWidth: 40, halign: "right" },
+              3: { cellWidth: 35, halign: "right" },
+              4: { cellWidth: 40, halign: "right" },
             },
             margin: { left: 14, right: 14 },
           });
@@ -205,9 +209,9 @@ export default function BoatProfilePage() {
         if (catchData && catchData.length > 0) {
           const catchTableData = catchData.map((c) => [
             c.species,
-            `${Number(c.weight_kg).toFixed(2)} kg`,
-            formatCurrency(Number(c.price_per_kg)),
-            formatCurrency(Number(c.weight_kg) * Number(c.price_per_kg)),
+            `${Number(c.weight_kg).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`,
+            pdfCurrency(Number(c.price_per_kg)),
+            pdfCurrency(Number(c.weight_kg) * Number(c.price_per_kg)),
           ]);
 
           autoTable(doc, {
@@ -218,10 +222,10 @@ export default function BoatProfilePage() {
             headStyles: { fillColor: [34, 197, 94], fontSize: 9 },
             bodyStyles: { fontSize: 8 },
             columnStyles: {
-              0: { cellWidth: 50 },
-              1: { cellWidth: 35, halign: "right" },
-              2: { cellWidth: 35, halign: "right" },
-              3: { cellWidth: 35, halign: "right" },
+              0: { cellWidth: 55 },
+              1: { cellWidth: 40, halign: "right" },
+              2: { cellWidth: 45, halign: "right" },
+              3: { cellWidth: 50, halign: "right" },
             },
             margin: { left: 14, right: 14 },
           });
@@ -244,9 +248,9 @@ export default function BoatProfilePage() {
       const summaryRows = [
         ["Total Trips", String(profile.total_trips)],
         ["Active Trips", String(profile.active_trips)],
-        ["Total Revenue", formatCurrency(profile.total_revenue)],
-        ["Total Expenses", formatCurrency(profile.total_expense)],
-        ["Net Profit", formatCurrency(profile.total_net_profit)],
+        ["Total Revenue", pdfCurrency(profile.total_revenue)],
+        ["Total Expenses", pdfCurrency(profile.total_expense)],
+        ["Net Profit / (Loss)", pdfCurrency(profile.total_net_profit)],
       ];
 
       autoTable(doc, {
@@ -257,8 +261,8 @@ export default function BoatProfilePage() {
         headStyles: { fillColor: [100, 100, 100], fontSize: 10 },
         bodyStyles: { fontSize: 10 },
         columnStyles: {
-          0: { cellWidth: 80 },
-          1: { cellWidth: 80, halign: "right" },
+          0: { cellWidth: 60 },
+          1: { cellWidth: 90, halign: "right" },
         },
         margin: { left: 14, right: 14 },
       });
