@@ -6,12 +6,12 @@ import { HapticTabButton } from "@/components/HapticTabButton";
 
 const getTabBarIcon = (routeName: string, focused: boolean) => {
   const icons: Record<string, any> = {
-    dashboard: require("../../assets/dashboard.png"),
-    trips: require("../../assets/trips.png"),
-    fleet: require("../../assets/fleet.png"),
-    calendar: require("../../assets/calendar.png"),
+    dashboard: require("../../../assets/dashboard.png"),
+    trips: require("../../../assets/trips.png"),
+    fleet: require("../../../assets/fleet.png"),
+    calendar: require("../../../assets/calendar.png"),
   };
-  return icons[routeName] || require("../../assets/more.png");
+  return icons[routeName] || require("../../../assets/more.png");
 };
 
 export default function TabLayout() {
@@ -100,7 +100,7 @@ export default function TabLayout() {
           title: "More",
           tabBarIcon: ({ focused }) => (
             <HapticTabButton
-              icon={require("../../assets/more.png")}
+              icon={require("../../../assets/more.png")}
               focused={focused}
             />
           ),
