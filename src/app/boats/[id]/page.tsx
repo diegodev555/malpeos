@@ -1,21 +1,45 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseClient } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Ship, TrendingUp, TrendingDown, Calendar, DollarSign, Anchor, Activity, BarChart3, Fish } from "lucide-react";
+import { ArrowLeft, Ship, TrendingUp, TrendingDown, Calendar, DollarSign, Anchor, Activity, BarChart3, Fish, Download } from "lucide-react";
 import type { Boat, TripSummary } from "@/types/database";
+import { toast } from "sonner";
 
 const BUCKET_NAME = "boat-images";
 
-function formatDate(dateStr: string) {
+function formatDate(dateStr: string | null | undefined) {
+  if (!dateStr) return "-";
   const d = new Date(dateStr);
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+interface ExpenseDetail {
+  id: string;
+  trip_id: string;
+  category: string;
+  base_amount: number;
+  gst_amount: number;
+  description: string | null;
+}
+
+interface TripWithExpenses {
+  trip_id: string;
+  start_date: string;
+  end_date: string | null;
+  status: string;
+  gross_revenue: number;
+  total_base_expense: number;
+  total_gst_paid: number;
+  total_expense: number;
+  net_profit: number;
+  expenses: ExpenseDetail[];
 }
 
 interface BoatProfileData {
@@ -25,6 +49,7 @@ interface BoatProfileData {
   total_revenue: number;
   total_expense: number;
   total_net_profit: number;
+  allTrips: TripWithExpenses[];
 }
 
 export default function BoatProfilePage() {
@@ -33,8 +58,8 @@ export default function BoatProfilePage() {
   const boatId = params.id as string;
 
   const [profile, setProfile] = useState<BoatProfileData | null>(null);
-  const [recentTrips, setRecentTrips] = useState<TripSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   const formatCurrency = (value: number) =>
@@ -59,6 +84,193 @@ export default function BoatProfilePage() {
       setImageUrl(null);
     }
   }
+
+  const generatePdf = useCallback(async () => {
+    if (!profile) return;
+
+    setGeneratingPdf(true);
+    try {
+      const { default: jsPDF } = await import("jspdf");
+      const { default: autoTable } = await import("jspdf-autotable");
+
+      const supabase = getSupabaseClient();
+
+      // Fetch all expenses for all trips of this boat
+      const tripIds = profile.allTrips.map((t) => t.trip_id);
+      const { data: expenseData, error: expenseError } = await supabase
+        .from("expenses")
+        .select("*")
+        .in("trip_id", tripIds)
+        .order("created_at", { ascending: true });
+
+      if (expenseError) throw expenseError;
+      const expensesMap: Record<string, ExpenseDetail[]> = {};
+      for (const exp of expenseData || []) {
+        const tid = exp.trip_id;
+        if (!expensesMap[tid]) expensesMap[tid] = [];
+        expensesMap[tid].push({
+          id: exp.id,
+          trip_id: exp.trip_id,
+          category: exp.category,
+          base_amount: Number(exp.base_amount),
+          gst_amount: Number(exp.gst_amount),
+          description: exp.description,
+        });
+      }
+
+      const doc = new jsPDF("l", "mm", "a4");
+
+      // Title
+      doc.setFontSize(18);
+      doc.text(`Boat Expense Report`, 14, 20);
+      doc.setFontSize(12);
+      doc.text(`${profile.boat.name} (${profile.boat.registration})`, 14, 28);
+      doc.setFontSize(10);
+      doc.text(`Generated: ${new Date().toLocaleDateString("en-IN")}`, 14, 34);
+
+      let yOffset = 42;
+
+      for (const trip of profile.allTrips) {
+        const tripExpenses = expensesMap[trip.trip_id] || [];
+
+        // Check if we need a page break
+        if (yOffset > 180) {
+          doc.addPage();
+          yOffset = 20;
+        }
+
+        // Trip header
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text(
+          `Trip: ${formatDate(trip.start_date)}${trip.end_date ? ` - ${formatDate(trip.end_date)}` : ""} (${trip.status})`,
+          14,
+          yOffset
+        );
+        yOffset += 6;
+
+        // Trip summary line
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.text(
+          `Revenue: ${formatCurrency(trip.gross_revenue)}  |  Total Expense: ${formatCurrency(trip.total_expense)}  |  Net: ${formatCurrency(trip.net_profit)}`,
+          14,
+          yOffset
+        );
+        yOffset += 6;
+
+        // Expense table
+        if (tripExpenses.length > 0) {
+          const tableData = tripExpenses.map((e) => [
+            e.category,
+            e.description || "-",
+            formatCurrency(e.base_amount),
+            formatCurrency(e.gst_amount),
+            formatCurrency(e.base_amount + e.gst_amount),
+          ]);
+
+          autoTable(doc, {
+            startY: yOffset,
+            head: [["Category", "Description", "Base Amount", "GST", "Total"]],
+            body: tableData,
+            theme: "grid",
+            headStyles: { fillColor: [59, 130, 246], fontSize: 9 },
+            bodyStyles: { fontSize: 8 },
+            columnStyles: {
+              0: { cellWidth: 28 },
+              1: { cellWidth: 65 },
+              2: { cellWidth: 35, halign: "right" },
+              3: { cellWidth: 30, halign: "right" },
+              4: { cellWidth: 35, halign: "right" },
+            },
+            margin: { left: 14, right: 14 },
+          });
+
+          // Get the last autoTable to know where the next content goes
+          const lastTable = (doc as any).lastAutoTable;
+          yOffset = lastTable ? lastTable.finalY + 8 : yOffset + 8;
+        } else {
+          doc.setFontSize(9);
+          doc.text("No expenses recorded for this trip.", 14, yOffset);
+          yOffset += 8;
+        }
+
+        // Catch summary
+        const { data: catchData } = await supabase
+          .from("catch_logs")
+          .select("*")
+          .eq("trip_id", trip.trip_id)
+          .order("species", { ascending: true });
+
+        if (catchData && catchData.length > 0) {
+          const catchTableData = catchData.map((c) => [
+            c.species,
+            `${Number(c.weight_kg).toFixed(2)} kg`,
+            formatCurrency(Number(c.price_per_kg)),
+            formatCurrency(Number(c.weight_kg) * Number(c.price_per_kg)),
+          ]);
+
+          autoTable(doc, {
+            startY: yOffset,
+            head: [["Species", "Weight", "Rate/kg", "Value"]],
+            body: catchTableData,
+            theme: "grid",
+            headStyles: { fillColor: [34, 197, 94], fontSize: 9 },
+            bodyStyles: { fontSize: 8 },
+            columnStyles: {
+              0: { cellWidth: 50 },
+              1: { cellWidth: 35, halign: "right" },
+              2: { cellWidth: 35, halign: "right" },
+              3: { cellWidth: 35, halign: "right" },
+            },
+            margin: { left: 14, right: 14 },
+          });
+
+          const lastTable2 = (doc as any).lastAutoTable;
+          yOffset = lastTable2 ? lastTable2.finalY + 8 : yOffset + 8;
+        }
+      }
+
+      // Summary page
+      doc.addPage();
+      doc.setFontSize(16);
+      doc.text("Overall Summary", 14, 20);
+
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text(`${profile.boat.name} (${profile.boat.registration})`, 14, 30);
+      doc.setFont("helvetica", "normal");
+
+      const summaryRows = [
+        ["Total Trips", String(profile.total_trips)],
+        ["Active Trips", String(profile.active_trips)],
+        ["Total Revenue", formatCurrency(profile.total_revenue)],
+        ["Total Expenses", formatCurrency(profile.total_expense)],
+        ["Net Profit", formatCurrency(profile.total_net_profit)],
+      ];
+
+      autoTable(doc, {
+        startY: 36,
+        head: [["Metric", "Value"]],
+        body: summaryRows,
+        theme: "grid",
+        headStyles: { fillColor: [100, 100, 100], fontSize: 10 },
+        bodyStyles: { fontSize: 10 },
+        columnStyles: {
+          0: { cellWidth: 80 },
+          1: { cellWidth: 80, halign: "right" },
+        },
+        margin: { left: 14, right: 14 },
+      });
+
+      doc.save(`expenses-${profile.boat.name.replace(/\s+/g, "-").toLowerCase()}.pdf`);
+    } catch (err) {
+      toast.error("Failed to generate PDF");
+      console.error(err);
+    } finally {
+      setGeneratingPdf(false);
+    }
+  }, [profile, formatCurrency]);
 
   useEffect(() => {
     async function fetchData() {
@@ -89,6 +301,20 @@ export default function BoatProfilePage() {
         if (tripError) throw tripError;
         const trips = (tripData || []) as TripSummary[];
 
+        // Build allTrips with empty expenses array (expenses loaded on PDF generation)
+        const allTrips: TripWithExpenses[] = trips.map((t) => ({
+          trip_id: t.trip_id,
+          start_date: t.start_date,
+          end_date: t.end_date,
+          status: t.status,
+          gross_revenue: Number(t.gross_revenue),
+          total_base_expense: Number(t.total_base_expense),
+          total_gst_paid: Number(t.total_gst_paid),
+          total_expense: Number(t.total_expense),
+          net_profit: Number(t.net_profit),
+          expenses: [],
+        }));
+
         // Compute aggregated stats from trip data
         const total_trips = trips.length;
         const active_trips = trips.filter((t) => t.status === "active").length;
@@ -103,10 +329,8 @@ export default function BoatProfilePage() {
           total_revenue,
           total_expense,
           total_net_profit,
+          allTrips,
         });
-
-        // Recent trips (top 10)
-        setRecentTrips(trips.slice(0, 10));
       } catch (err) {
         console.error("Failed to fetch boat profile:", err);
       } finally {
@@ -152,14 +376,28 @@ export default function BoatProfilePage() {
   return (
     <div className="space-y-8">
       {/* Back button */}
-      <Button
-        variant="ghost"
-        className="gap-2 -ml-2 text-muted-foreground hover:text-foreground"
-        onClick={() => router.push("/boats")}
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to Fleet Manager
-      </Button>
+      <div className="flex items-center justify-between">
+        <Button
+          variant="ghost"
+          className="gap-2 -ml-2 text-muted-foreground hover:text-foreground"
+          onClick={() => router.push("/boats")}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Fleet Manager
+        </Button>
+
+        {profile.allTrips.length > 0 && (
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={generatePdf}
+            disabled={generatingPdf}
+          >
+            <Download className="h-4 w-4" />
+            {generatingPdf ? "Generating PDF..." : "Download Expense Report"}
+          </Button>
+        )}
+      </div>
 
       {/* Hero Section */}
       <div className="glass-surface relative overflow-hidden rounded-3xl">
@@ -288,7 +526,7 @@ export default function BoatProfilePage() {
           </Link>
         </CardHeader>
         <CardContent className="px-6 pb-6">
-          {recentTrips.length === 0 ? (
+          {profile.allTrips.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-10 text-muted-foreground">
               <Fish className="h-8 w-8" />
               <p className="text-sm">No trips yet for this boat</p>
@@ -298,7 +536,7 @@ export default function BoatProfilePage() {
             </div>
           ) : (
             <div className="space-y-2">
-              {recentTrips.map((trip) => (
+              {profile.allTrips.slice(0, 10).map((trip) => (
                 <Link
                   key={trip.trip_id}
                   href="/trips"
@@ -317,10 +555,10 @@ export default function BoatProfilePage() {
                       </Badge>
                     </div>
                     <div className="mt-0.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
-                      <span>Revenue: {formatCurrency(Number(trip.gross_revenue))}</span>
-                      <span>Expense: {formatCurrency(Number(trip.total_expense))}</span>
-                      <span className={Number(trip.net_profit) >= 0 ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
-                        Net: {formatCurrency(Number(trip.net_profit))}
+                      <span>Revenue: {formatCurrency(trip.gross_revenue)}</span>
+                      <span>Expense: {formatCurrency(trip.total_expense)}</span>
+                      <span className={trip.net_profit >= 0 ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
+                        Net: {formatCurrency(trip.net_profit)}
                       </span>
                     </div>
                   </div>
