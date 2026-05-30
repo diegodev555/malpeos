@@ -1,31 +1,34 @@
 import React from "react";
-import { Text, StyleSheet, Platform } from "react-native";
+import { StyleSheet, Platform, ImageSourcePropType, Image as RNImage } from "react-native";
 
 interface HapticTabButtonProps {
-  icon: string;
+  icon: ImageSourcePropType;
   focused: boolean;
 }
 
 export function HapticTabButton({ icon, focused }: HapticTabButtonProps) {
+  const iconSize = focused ? 28 : 24;
+  
   return (
-    <Text
+    <RNImage
+      source={icon}
       style={[
         styles.icon,
         {
-          fontSize: focused ? 26 : 24,
+          width: iconSize,
+          height: iconSize,
           opacity: focused ? 1 : 0.6,
           marginTop: Platform.OS === "ios" ? 6 : 4,
+          tintColor: focused ? "#0B3C64" : "#6B7280",
         },
       ]}
-    >
-      {icon}
-    </Text>
+      resizeMode="contain"
+    />
   );
 }
 
 const styles = StyleSheet.create({
   icon: {
-    includeFontPadding: false,
-    textAlign: "center",
+    alignSelf: "center",
   },
 });
