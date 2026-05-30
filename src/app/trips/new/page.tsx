@@ -240,6 +240,8 @@ export default function NewTripPage() {
       maximumFractionDigits: 0,
     }).format(value);
 
+  const selectedBoat = boats.find((b) => b.id === boatId);
+
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <div className="flex items-center gap-4">
@@ -265,7 +267,13 @@ export default function NewTripPage() {
             <Label htmlFor="boat">Boat *</Label>
             <Select value={boatId} onValueChange={(val) => val && setBoatId(val)}>
               <SelectTrigger>
-                <SelectValue placeholder="Select a boat" />
+                {selectedBoat ? (
+                  <span>
+                    {selectedBoat.name} ({selectedBoat.registration})
+                  </span>
+                ) : (
+                  <SelectValue placeholder="Select a boat" />
+                )}
               </SelectTrigger>
               <SelectContent>
                 {boats.map((boat) => (
