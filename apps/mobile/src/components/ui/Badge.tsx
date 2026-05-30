@@ -1,48 +1,61 @@
 import React from "react";
-import { View, Text, ViewStyle } from "react-native";
-import { cn } from "@/lib/cn";
+import { View, Text, StyleSheet, ViewStyle } from "react-native";
+import { theme } from "@/theme";
+
+type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
 
 interface BadgeProps {
-  variant?: "default" | "secondary" | "destructive" | "outline";
-  className?: string;
   children: React.ReactNode;
+  variant?: BadgeVariant;
+  style?: ViewStyle;
 }
 
-const variantStyles: Record<string, ViewStyle> = {
-  default: { backgroundColor: "oklch(0.46 0.145 223)", paddingHorizontal: 8, paddingVertical: 2 },
-  secondary: { backgroundColor: "oklch(0.94 0.035 193 / 0.72)", paddingHorizontal: 8, paddingVertical: 2 },
-  destructive: { backgroundColor: "rgba(220, 38, 38, 0.1)", paddingHorizontal: 8, paddingVertical: 2 },
-  outline: { backgroundColor: "transparent", paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1, borderColor: "rgba(255,255,255,0.54)" },
-};
-
-const variantTextColors: Record<string, string> = {
-  default: "#ffffff",
-  secondary: "oklch(0.25 0.063 222)",
-  destructive: "oklch(0.577 0.245 27.325)",
-  outline: "oklch(0.18 0.032 246)",
-};
-
-export function Badge({ variant = "default", className, children }: BadgeProps) {
+/**
+ * Badge — matches the web app's Badge component styling
+ * Ref: src/components/ui/badge.tsx
+ */
+export function Badge({ children, variant = "default", style }: BadgeProps) {
   return (
-    <View
-      className={cn("rounded-full", className)}
-      style={[
-        variantStyles[variant],
-        {
-          borderRadius: 9999,
-          alignSelf: "flex-start",
-        },
-      ]}
-    >
-      <Text
-        style={{
-          fontSize: 12,
-          fontWeight: "600",
-          color: variantTextColors[variant],
-        }}
-      >
-        {children}
-      </Text>
+    <View style={[styles.base, styles[variant], style]}>
+      <Text style={textStyles[variant]}>{children}</Text>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  base: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 9999,
+  },
+  default: {
+    backgroundColor: theme.colors.primary,
+  },
+  secondary: {
+    backgroundColor: theme.colors.secondary,
+  },
+  destructive: {
+    backgroundColor: theme.colors.destructive,
+  },
+  outline: {
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+});
+
+const textStyles: Record<BadgeVariant, any> = {
+  default: {
+    color: theme.colors.primaryForeground,
+  },
+  secondary: {
+    color: theme.colors.secondaryForeground,
+  },
+  destructive: {
+    color: "#FFFFFF",
+  },
+  outline: {
+    color: theme.colors.foreground,
+  },
+};

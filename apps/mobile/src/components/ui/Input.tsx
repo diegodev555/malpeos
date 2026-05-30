@@ -1,55 +1,73 @@
 import React from "react";
-import { TextInput, View, Text, TextInputProps, ViewStyle } from "react-native";
-import { cn } from "@/lib/cn";
+import {
+  View,
+  TextInput,
+  Text,
+  StyleSheet,
+  ViewStyle,
+  TextInputProps,
+} from "react-native";
+import { theme } from "@/theme";
 
 interface InputProps extends TextInputProps {
   label?: string;
   error?: string;
-  containerClassName?: string;
+  containerStyle?: ViewStyle;
 }
 
 /**
- * Input component — matches the web app's glass-control input design
+ * AppInput — matches the web app's Input component
  * Ref: src/components/ui/input.tsx
  */
 export function Input({
   label,
   error,
-  containerClassName,
-  className,
+  containerStyle,
   style,
   ...props
 }: InputProps) {
   return (
-    <View className={cn("gap-1.5", containerClassName)}>
-      {label && (
-        <Text className="text-sm font-medium text-foreground/80">{label}</Text>
-      )}
+    <View style={[styles.container, containerStyle]}>
+      {label && <Text style={styles.label}>{label}</Text>}
       <TextInput
-        className={cn(
-          "h-9 rounded-xl border px-3 py-1 text-base",
-          "border-white/60 bg-white/40",
-          "text-foreground",
-          error ? "border-destructive" : "",
-          className
-        )}
         style={[
-          {
-            // Glass effect
-            shadowColor: "rgba(13, 27, 68, 0.09)",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 1,
-            shadowRadius: 2,
-            elevation: 2,
-          },
+          styles.input,
+          error && styles.inputError,
           style,
         ]}
-        placeholderTextColor="oklch(0.48 0.048 235)"
+        placeholderTextColor={theme.colors.mutedForeground}
         {...props}
       />
-      {error && (
-        <Text className="text-xs text-destructive">{error}</Text>
-      )}
+      {error && <Text style={styles.error}>{error}</Text>}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    gap: 4,
+  },
+  label: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: theme.colors.mutedForeground,
+    marginBottom: 2,
+  },
+  input: {
+    height: 44,
+    paddingHorizontal: 12,
+    fontSize: 15,
+    color: theme.colors.foreground,
+    backgroundColor: "rgba(255, 255, 255, 0.58)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.54)",
+    borderRadius: 12,
+  },
+  inputError: {
+    borderColor: theme.colors.destructive,
+  },
+  error: {
+    fontSize: 12,
+    color: theme.colors.destructive,
+  },
+});

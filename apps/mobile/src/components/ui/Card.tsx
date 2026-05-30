@@ -1,38 +1,41 @@
 import React from "react";
-import { View, Text, ViewProps, ViewStyle } from "react-native";
-import { cn } from "@/lib/cn";
+import { View, Text, StyleSheet, ViewStyle, TextStyle } from "react-native";
+import { glassSurface, glassSurfaceDark } from "@/styles/glass";
+import { theme } from "@/theme";
 
 interface CardProps {
+  children: React.ReactNode;
+  style?: ViewStyle;
+  dark?: boolean;
   size?: "default" | "sm";
-  className?: string;
-  style?: ViewStyle | ViewStyle[];
-  children?: React.ReactNode;
+}
+
+interface CardHeaderProps {
+  children: React.ReactNode;
+  style?: ViewStyle;
+}
+
+interface CardTitleProps {
+  children: React.ReactNode;
+  style?: TextStyle;
+}
+
+interface CardContentProps {
+  children: React.ReactNode;
+  style?: ViewStyle;
 }
 
 /**
- * Card component — matches the web app's glass-surface card design
- * Ref: src/components/ui/card.tsx + globals.css .glass-surface
+ * AppCard — matches the web app's Card component
+ * Ref: src/components/ui/card.tsx + .glass-surface CSS class
  */
-export function Card({ className, size = "default", style, children }: CardProps) {
+export function Card({ children, style, dark = false, size = "default" }: CardProps) {
   return (
     <View
-      className={cn(
-        "rounded-2xl overflow-hidden",
-        size === "default" ? "py-4" : "py-3",
-        className
-      )}
       style={[
-        {
-          backgroundColor: "rgba(255,255,255,0.66)",
-          borderWidth: 1,
-          borderColor: "rgba(255,255,255,0.6)",
-          shadowColor: "rgba(13, 27, 68, 0.13)",
-          shadowOffset: { width: 0, height: 18 },
-          shadowOpacity: 1,
-          shadowRadius: 50,
-          elevation: 10,
-        },
-        style as any,
+        dark ? glassSurfaceDark : glassSurface,
+        size === "sm" ? styles.cardSmall : styles.cardDefault,
+        style,
       ]}
     >
       {children}
@@ -40,69 +43,50 @@ export function Card({ className, size = "default", style, children }: CardProps
   );
 }
 
-interface CardHeaderProps {
-  className?: string;
-  style?: ViewStyle | ViewStyle[];
-  children?: React.ReactNode;
-}
-
-export function CardHeader({ className, style, children }: CardHeaderProps) {
+export function CardHeader({ children, style }: CardHeaderProps) {
   return (
-    <View
-      className={cn("px-5 flex-row items-center justify-between", className)}
-      style={style as any}
-    >
+    <View style={[styles.header, style]}>
       {children}
     </View>
   );
 }
 
-interface CardTitleProps {
-  className?: string;
-  children?: React.ReactNode;
-}
-
-export function CardTitle({ className, children }: CardTitleProps) {
+export function CardTitle({ children, style }: CardTitleProps) {
   return (
-    <Text className={cn("font-semibold", className)} style={{ fontSize: 16.8 } as any}>
+    <Text style={[styles.title, style]}>
       {children}
     </Text>
   );
 }
 
-interface CardContentProps {
-  className?: string;
-  style?: ViewStyle | ViewStyle[];
-  children?: React.ReactNode;
-}
-
-export function CardContent({ className, style, children }: CardContentProps) {
+export function CardContent({ children, style }: CardContentProps) {
   return (
-    <View className={cn("px-5", className)} style={style as any}>
+    <View style={[styles.content, style]}>
       {children}
     </View>
   );
 }
 
-interface CardFooterProps {
-  className?: string;
-  style?: ViewStyle | ViewStyle[];
-  children?: React.ReactNode;
-}
-
-export function CardFooter({ className, style, children }: CardFooterProps) {
-  return (
-    <View
-      className={cn("px-4 py-3 border-t flex-row items-center", className)}
-      style={[
-        {
-          borderTopColor: "rgba(255,255,255,0.54)",
-          backgroundColor: "rgba(255,255,255,0.3)",
-        },
-        style as any,
-      ]}
-    >
-      {children}
-    </View>
-  );
-}
+const styles = StyleSheet.create({
+  cardDefault: {
+    padding: 16,
+    marginBottom: 12,
+  },
+  cardSmall: {
+    padding: 12,
+    marginBottom: 12,
+  },
+  header: {
+    marginBottom: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: "600",
+    letterSpacing: -0.3,
+    color: theme.colors.foreground,
+  },
+  content: {},
+});
