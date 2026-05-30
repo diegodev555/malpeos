@@ -10,6 +10,7 @@ const config = getDefaultConfig(projectRoot);
 config.watchFolders = [
   workspaceRoot,
   path.resolve(projectRoot, "assets"),
+  path.resolve(projectRoot, "src/assets"),
 ];
 
 // Node modules resolution — project first, then workspace root
