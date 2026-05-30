@@ -7,7 +7,10 @@ const workspaceRoot = path.resolve(projectRoot, "../..");
 const config = getDefaultConfig(projectRoot);
 
 // Watch all files in the monorepo
-config.watchFolders = [workspaceRoot];
+config.watchFolders = [
+  workspaceRoot,
+  path.resolve(projectRoot, "assets"),
+];
 
 // Node modules resolution — project first, then workspace root
 config.resolver.nodeModulesPaths = [
