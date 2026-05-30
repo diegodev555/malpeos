@@ -6,7 +6,12 @@
     "dev": "NODE_OPTIONS='--require=./scripts/no-deprecation-warning.cjs' next dev",
     "build": "NODE_OPTIONS='--require=./scripts/no-deprecation-warning.cjs' next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "web": "cd apps/web && npm run dev",
+    "mobile": "cd apps/mobile && npx expo start",
+    "mobile:web": "cd apps/mobile && npx expo start --web",
+    "mobile:ios": "cd apps/mobile && npx expo start --ios",
+    "mobile:android": "cd apps/mobile && npx expo start --android"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
